@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMC Trading POI Visualization Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(25, 25, 40, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            color: #6366f1;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .status-green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-red {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .status-orange {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .status-gray {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            box-shadow: 0 0 20px rgba(107, 114, 128, 0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+        }
+
+        .chart-container {
+            background: rgba(25, 25, 40, 0.9);
+            border-radius: 12px;
+            padding: 0px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 600px;
+            background: #0a0a0f;
+            border-radius: 8px;
+            border: 1px solid #2a2a3e;
+        }
+
+        .controls-panel {
+            background: rgba(25, 25, 40, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a0a0b8;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #2a2a3e;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .price-display {
+            min-width: 80px;
+            padding: 6px 12px;
+            background: #1a1a2e;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #6366f1;
+            text-align: center;
+        }
+
+        .json-editor {
+            width: 100%;
+            min-height: 200px;
+            background: #0a0a0f;
+            color: #10b981;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .poi-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #0a0a0f;
+            border-radius: 6px;
+            padding: 10px;
+            border: 1px solid #2a2a3e;
+        }
+
+        .poi-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: rgba(30, 30, 45, 0.6);
+            border-radius: 6px;
+            border: 1px solid #2a2a3e;
+            transition: all 0.3s ease;
+        }
+
+        .poi-item:hover {
+            background: rgba(40, 40, 60, 0.8);
+            border-color: #6366f1;
+        }
+
+        .poi-info {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .poi-timeframe {
+            font-weight: bold;
+            color: #6366f1;
+            margin-right: 8px;
+        }
+
+        .poi-side-buy {
+            color: #10b981;
+        }
+
+        .poi-side-sell {
+            color: #ef4444;
+        }
+
+        .poi-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .poi-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .remove-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+
+        <div class="main-content">
+            <div class="chart-container">
+                <svg id="chart" class="chart-svg" viewBox="0 0 1000 600">
+                    <!-- Chart content will be rendered here -->
+                </svg>
+
+                <div class="header">
+                    <div class="status-bar">
+                        <div id="priceStatus" class="status-indicator status-gray">
+                            <span>⚪</span>
+                            <span id="statusText">Not in any POI</span>
+                        </div>
+                        <div style="color: #a0a0b8;">
+                            Current Price: <span id="currentPriceDisplay"
+                                style="color: #6366f1; font-weight: bold;">1820.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="control-group">
+                    <label for="priceSlider">Live Price Simulator</label>
+                    <div class="slider-container">
+                        <input type="range" id="priceSlider" min="1800" max="1840" value="1820" step="0.1">
+                        <div class="price-display" id="sliderValue">1820.00</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>POI JSON Editor</label>
+                    <textarea id="jsonEditor" class="json-editor"></textarea>
+                    <div class="button-group">
+                        <button onclick="applyJSON()">Apply</button>
+                        <button onclick="addPOI()">Add POI</button>
+                        <!-- <button onclick="dumpCurrent()">Dump Current</button> -->
+                        <button onclick="resetToDefault()">Reset</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Active POIs</label>
+                    <div id="poiList" class="poi-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let livePrice = 1820;
+        let pois = [];
+
+        // Timeframe configuration
+        const timeframes = ['month', 'week', 'daily', '4h', '1h', '15m'];
+        const timeframeStrength = {
+            'monthly': 1.0,
+            'weekly': 0.9,
+            'daily': 0.75,
+            '4h': 0.6,
+            '1h': 0.45,
+            '15m': 0.3
+        };
+
+        // Default POIs
+        const defaultPOIs = [
+            { timeframe: 'monthly', side: 'sell', start: 1835, end: 1838, label: 'Monthly Sell 1835-1838' },
+            { timeframe: 'monthly', side: 'buy', start: 1805, end: 1808, label: 'Monthly Buy 1805-1808' },
+            { timeframe: 'weekly', side: 'sell', start: 1828, end: 1831, label: 'Weekly Sell 1828-1831' },
+            { timeframe: 'weekly', side: 'buy', start: 1812, end: 1815, label: 'Weekly Buy 1812-1815' },
+            { timeframe: 'daily', side: 'sell', start: 1824, end: 1826, label: 'Daily Sell 1824-1826' },
+            { timeframe: 'daily', side: 'buy', start: 1816, end: 1818, label: 'Daily Buy 1816-1818' },
+            { timeframe: '4h', side: 'sell', start: 1821, end: 1823, label: '4H Sell 1821-1823' },
+            { timeframe: '4h', side: 'buy', start: 1818, end: 1820, label: '4H Buy 1818-1820' },
+            { timeframe: '1h', side: 'sell', start: 1820.5, end: 1821.5, label: '1H Sell 1820.5-1821.5' },
+            { timeframe: '1h', side: 'buy', start: 1819, end: 1819.8, label: '1H Buy 1819-1819.8' },
+            { timeframe: '15m', side: 'sell', start: 1820.2, end: 1820.6, label: '15M Sell 1820.2-1820.6' },
+            { timeframe: '15m', side: 'buy', start: 1819.4, end: 1819.6, label: '15M Buy 1819.4-1819.6' }
+        ];
+
+        // Initialize
+        function init() {
+            pois = [...defaultPOIs];
+            dumpCurrent();
+            setupEventListeners();
+            updateChart();
+            updatePOIList();
+        }
+
+        function setupEventListeners() {
+            const slider = document.getElementById('priceSlider');
+            slider.addEventListener('input', (e) => {
+                livePrice = parseFloat(e.target.value);
+                document.getElementById('sliderValue').textContent = livePrice.toFixed(2);
+                document.getElementById('currentPriceDisplay').textContent = livePrice.toFixed(2);
+                updateChart();
+                updateStatus();
+            });
+        }
+
+        function updateChart() {
+            const svg = document.getElementById('chart');
+            const width = 1000;
+            const height = 600;
+            const margin = { top: 40, right: 60, bottom: 40, left: 60 };
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            // Price range
+            const minPrice = Math.min(...pois.map(p => p.start), livePrice - 5);
+            const maxPrice = Math.max(...pois.map(p => p.end), livePrice + 5);
+            const priceRange = maxPrice - minPrice;
+
+            const xScale = (price) => margin.left + ((price - minPrice) / priceRange) * chartWidth;
+
+            // Clear and rebuild chart
+            svg.innerHTML = '';
+
+            // Background gradient
+            svg.innerHTML += `
+                <defs>
+                    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#0a0a0f;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#1a1a2e;stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <rect width="${width}" height="${height}" fill="url(#bgGradient)"/>
+            `;
+
+            // Grid lines
+            for (let i = 0; i <= 10; i++) {
+                const x = margin.left + (i / 10) * chartWidth;
+                svg.innerHTML += `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${height - margin.bottom}" 
+                    stroke="#2a2a3e" stroke-width="0.5" opacity="0.3"/>`;
+            }
+
+            // Center line
+            const centerY = height / 2;
+            svg.innerHTML += `<line x1="${margin.left}" y1="${centerY}" x2="${width - margin.right}" y2="${centerY}" 
+                stroke="#6366f1" stroke-width="2" opacity="0.5" stroke-dasharray="5,5"/>`;
+
+            // Draw POIs
+            const timeframeHeight = (chartHeight / 2 - 20) / timeframes.length;
+
+            pois.forEach(poi => {
+                const tfIndex = timeframes.indexOf(poi.timeframe);
+                const x1 = xScale(poi.start);
+                const x2 = xScale(poi.end);
+                const width = x2 - x1;
+                const strength = timeframeStrength[poi.timeframe] || 0.5;
+                const height = timeframeHeight * strength;
+
+                let y, color, opacity;
+                if (poi.side === 'sell') {
+                    y = centerY - (tfIndex + 1) * timeframeHeight - height / 2;
+                    color = '#ef4444';
+                    opacity = 0.3 + strength * 0.4;
+                } else {
+                    y = centerY + tfIndex * timeframeHeight + timeframeHeight / 2 - height / 2;
+                    color = '#10b981';
+                    opacity = 0.3 + strength * 0.4;
+                }
+
+                // Check if price is inside this POI
+                const isActive = livePrice >= poi.start && livePrice <= poi.end;
+                const strokeColor = isActive ? '#fbbf24' : color;
+                const strokeWidth = isActive ? 3 : 1;
+
+                svg.innerHTML += `
+                    <rect x="${x1}" y="${y}" width="${width}" height="${height}" 
+                        fill="${color}" opacity="${opacity}" 
+                        stroke="${strokeColor}" stroke-width="${strokeWidth}"
+                        rx="3" ry="3" ${isActive ? 'filter="url(#glow)"' : ''}/>
+                    <text x="${x1 + width / 2}" y="${y + height / 2}" 
+                        text-anchor="middle" dominant-baseline="middle" 
+                        fill="white" font-size="10" font-weight="500" opacity="0.9">
+                        ${poi.timeframe.toUpperCase()}
+                    </text>
+                `;
+            });
+
+            // Live price line
+            const priceX = xScale(livePrice);
+            const priceLineColor = getPriceLineColor();
+            svg.innerHTML += `
+                <line x1="${priceX}" y1="${margin.top}" x2="${priceX}" y2="${height - margin.bottom}" 
+                    stroke="${priceLineColor}" stroke-width="3" opacity="0.8" filter="url(#glow)"/>
+                <circle cx="${priceX}" cy="${centerY}" r="6" fill="${priceLineColor}" filter="url(#glow)"/>
+                <text x="${priceX}" y="${margin.top - 10}" text-anchor="middle" 
+                    fill="${priceLineColor}" font-size="14" font-weight="bold">
+                    ${livePrice.toFixed(2)}
+                </text>
+            `;
+
+            // Timeframe labels
+            timeframes.forEach((tf, index) => {
+                const sellY = centerY - (index + 0.5) * timeframeHeight;
+                const buyY = centerY + (index + 0.5) * timeframeHeight;
+
+                svg.innerHTML += `
+                    <text x="${margin.left - 10}" y="${sellY}" text-anchor="end" 
+                        fill="#a0a0b8" font-size="12" dominant-baseline="middle">
+                        ${tf.toUpperCase()}
+                    </text>
+                    <text x="${margin.left - 10}" y="${buyY}" text-anchor="end" 
+                        fill="#a0a0b8" font-size="12" dominant-baseline="middle">
+                        ${tf.toUpperCase()}
+                    </text>
+                `;
+            });
+
+
+
+            // Price axis
+            for (let i = 0; i <= 5; i++) {
+                const price = minPrice + (i / 5) * priceRange;
+                const x = xScale(price);
+                svg.innerHTML += `
+                    <text x="${x}" y="${height - margin.bottom + 20}" text-anchor="middle" 
+                        fill="#a0a0b8" font-size="10">
+                        ${price.toFixed(1)}
+                    </text>
+                `;
+            }
+        }
+
+        function getPriceLineColor() {
+            const inBuy = pois.some(poi => poi.side === 'buy' && livePrice >= poi.start && livePrice <= poi.end);
+            const inSell = pois.some(poi => poi.side === 'sell' && livePrice >= poi.start && livePrice <= poi.end);
+
+            if (inBuy && inSell) return '#f59e0b';
+            if (inBuy) return '#10b981';
+            if (inSell) return '#ef4444';
+            return '#6b7280';
+        }
+
+        function updateStatus() {
+            const inBuy = pois.some(poi => poi.side === 'buy' && livePrice >= poi.start && livePrice <= poi.end);
+            const inSell = pois.some(poi => poi.side === 'sell' && livePrice >= poi.start && livePrice <= poi.end);
+
+            const statusEl = document.getElementById('priceStatus');
+            const statusText = document.getElementById('statusText');
+
+            statusEl.className = 'status-indicator';
+
+            if (inBuy && inSell) {
+                statusEl.classList.add('status-orange');
+                statusEl.innerHTML = '<span>🟠</span><span id="statusText">Conflict Zone (Buy + Sell)</span>';
+            } else if (inBuy) {
+                statusEl.classList.add('status-green');
+                statusEl.innerHTML = '<span>🟢</span><span id="statusText">Inside Buy POI</span>';
+            } else if (inSell) {
+                statusEl.classList.add('status-red');
+                statusEl.innerHTML = '<span>🔴</span><span id="statusText">Inside Sell POI</span>';
+            } else {
+                statusEl.classList.add('status-gray');
+                statusEl.innerHTML = '<span>⚪</span><span id="statusText">Not in any POI</span>';
+            }
+        }
+
+        function updatePOIList() {
+            const listEl = document.getElementById('poiList');
+            listEl.innerHTML = '';
+
+            pois.forEach((poi, index) => {
+                const item = document.createElement('div');
+                item.className = 'poi-item';
+                item.innerHTML = `
+                    <div class="poi-info">
+                        <span class="poi-timeframe">${poi.timeframe.toUpperCase()}</span>
+                        <span class="poi-side-${poi.side}">${poi.side.toUpperCase()}</span>
+                        <span style="color: #a0a0b8;">${poi.start.toFixed(2)} - ${poi.end.toFixed(2)}</span>
+                    </div>
+                    <div class="poi-actions">
+                        <button onclick="jumpToPOI(${index})">Jump</button>
+                        <button class="remove-btn" onclick="removePOI(${index})">Remove</button>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function applyJSON() {
+            try {
+                const json = document.getElementById('jsonEditor').value;
+                const parsed = JSON.parse(json);
+                if (Array.isArray(parsed)) {
+                    pois = parsed;
+                    updateChart();
+                    updatePOIList();
+                    updateStatus();
+                    alert('POIs updated successfully!');
+                }
+            } catch (e) {
+                alert('Invalid JSON format: ' + e.message);
+            }
+        }
+
+        function addPOI() {
+            const newPOI = {
+                timeframe: '1h',
+                side: Math.random() > 0.5 ? 'buy' : 'sell',
+                start: livePrice - 1,
+                end: livePrice + 1,
+                label: `New POI ${livePrice.toFixed(2)}`
+            };
+            pois.push(newPOI);
+            dumpCurrent();
+            updateChart();
+            updatePOIList();
+        }
+
+        function dumpCurrent() {
+            document.getElementById('jsonEditor').value = JSON.stringify(pois, null, 2);
+        }
+
+        function resetToDefault() {
+            pois = [...defaultPOIs];
+            dumpCurrent();
+            updateChart();
+            updatePOIList();
+            updateStatus();
+        }
+
+        function jumpToPOI(index) {
+            const poi = pois[index];
+            livePrice = (poi.start + poi.end) / 2;
+            document.getElementById('priceSlider').value = livePrice;
+            document.getElementById('sliderValue').textContent = livePrice.toFixed(2);
+            document.getElementById('currentPriceDisplay').textContent = livePrice.toFixed(2);
+            updateChart();
+            updateStatus();
+        }
+
+        function removePOI(index) {
+            pois.splice(index, 1);
+            dumpCurrent();
+            updateChart();
+            updatePOIList();
+            updateStatus();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
