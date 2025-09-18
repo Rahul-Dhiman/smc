@@ -254,6 +254,18 @@
             background: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
+        .manual-inputs {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+        
+        .manual-inputs label {
+          display: flex;
+          flex-direction: column;
+          font-size: 14px;
+        }
+
         @media (max-width: 1200px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -289,6 +301,20 @@
             <div class="controls-panel">
                 <div class="control-group">
                     <label for="priceSlider">Live Price Simulator</label>
+                    <div class="manual-inputs">
+                          <label>
+                            Min:
+                            <input type="number" id="minInput" value="20000">
+                          </label>
+                          <label>
+                            Max:
+                            <input type="number" id="maxInput" value="40000">
+                          </label>
+                          <label>
+                            Current:
+                            <input type="number" id="currentInput" value="25423">
+                          </label>
+                        </div>
                     <div class="slider-container">
                         <input type="range" id="priceSlider" min="20000" max="40000" value="25423" step="10">
                         <div class="price-display" id="sliderValue">25423</div>
@@ -615,6 +641,47 @@
             updatePOIList();
             updateStatus();
         }
+
+          const priceSlider = document.getElementById("priceSlider");
+          const sliderValue = document.getElementById("sliderValue");
+          const minInput = document.getElementById("minInput");
+          const maxInput = document.getElementById("maxInput");
+          const currentInput = document.getElementById("currentInput");
+        
+          // Update displayed value when slider moves
+          priceSlider.addEventListener("input", () => {
+            sliderValue.textContent = priceSlider.value;
+            currentInput.value = priceSlider.value;
+          });
+        
+          // Update slider when min changes
+          minInput.addEventListener("input", () => {
+            priceSlider.min = minInput.value;
+            if (+currentInput.value < +minInput.value) {
+              currentInput.value = minInput.value;
+              priceSlider.value = minInput.value;
+              sliderValue.textContent = minInput.value;
+            }
+          });
+        
+          // Update slider when max changes
+          maxInput.addEventListener("input", () => {
+            priceSlider.max = maxInput.value;
+            if (+currentInput.value > +maxInput.value) {
+              currentInput.value = maxInput.value;
+              priceSlider.value = maxInput.value;
+              sliderValue.textContent = maxInput.value;
+            }
+          });
+        
+          // Update slider when current input changes
+          currentInput.addEventListener("input", () => {
+            let value = +currentInput.value;
+            if (value < +minInput.value) value = +minInput.value;
+            if (value > +maxInput.value) value = +maxInput.value;
+            priceSlider.value = value;
+            sliderValue.textContent = value;
+          });
 
         // Initialize on load
         window.addEventListener('DOMContentLoaded', init);
