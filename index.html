@@ -655,11 +655,6 @@
           priceSlider.addEventListener("input", () => {
             sliderValue.textContent = priceSlider.value;
             currentInput.value = priceSlider.value;
-            livePrice = parseFloat(e.target.value);
-            document.getElementById('sliderValue').textContent = livePrice.toFixed(2);
-            document.getElementById('currentPriceDisplay').textContent = livePrice.toFixed(2);
-            updateChart();
-            updateStatus();
           });
         
           // Update slider when min changes
@@ -689,6 +684,7 @@
             if (value > +maxInput.value) value = +maxInput.value;
             priceSlider.value = value;
             sliderValue.textContent = value;
+            livePrice = value;
           });
 
         // Initialize on load
