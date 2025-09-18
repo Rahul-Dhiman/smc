@@ -345,7 +345,7 @@
 
     <script>
         // Global state
-        let livePrice = 1820;
+        let livePrice = 25000;
         let pois = [];
 
         // Timeframe configuration
@@ -655,6 +655,7 @@
           priceSlider.addEventListener("input", () => {
             sliderValue.textContent = priceSlider.value;
             currentInput.value = priceSlider.value;
+            livePrice = priceSlider.value;
           });
         
           // Update slider when min changes
