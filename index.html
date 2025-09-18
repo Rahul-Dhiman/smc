@@ -684,11 +684,6 @@
             if (value > +maxInput.value) value = +maxInput.value;
             priceSlider.value = value;
             sliderValue.textContent = value;
-            livePrice = parseFloat(e.target.value);
-            document.getElementById('sliderValue').textContent = livePrice.toFixed(2);
-            document.getElementById('currentPriceDisplay').textContent = livePrice.toFixed(2);
-            updateChart();
-            updateStatus();
           });
 
         // Initialize on load
