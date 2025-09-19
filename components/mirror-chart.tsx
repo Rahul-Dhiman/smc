@@ -27,11 +27,8 @@ const timeframeStrength = {
 }
 
 export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
-  const chartWidth = 900
-  const chartHeight = 500
-  const margin = { top: 30, right: 80, bottom: 30, left: 100 }
-  const plotWidth = chartWidth - margin.left - margin.right
-  const plotHeight = chartHeight - margin.top - margin.bottom
+  const chartHeight = 600
+  const margin = { top: 40, right: 120, bottom: 40, left: 120 }
 
   // Price range calculation with better padding
   const allPrices = pois.flatMap((poi) => [poi.start, poi.end])
@@ -40,12 +37,13 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
   const maxPrice = Math.max(...allPrices) + 8
   const priceRange = maxPrice - minPrice
 
-  // Scale function
+  // Scale function - now uses percentage-based calculations
   const priceToY = (price: number) => {
+    const plotHeight = chartHeight - margin.top - margin.bottom
     return margin.top + ((maxPrice - price) / priceRange) * plotHeight
   }
 
-  const timeframeHeight = plotHeight / timeframes.length
+  const timeframeHeight = (chartHeight - margin.top - margin.bottom) / timeframes.length
   const getTimeframeY = (timeframe: string) => {
     const index = timeframes.indexOf(timeframe as any)
     return margin.top + index * timeframeHeight
@@ -75,12 +73,18 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
           : "neutral"
 
   return (
-    <div className="w-full overflow-x-auto">
-      <svg width={chartWidth} height={chartHeight} className="border border-border rounded-lg shadow-sm">
+    <div className="w-full">
+      <svg
+        width="100%"
+        height={chartHeight}
+        viewBox={`0 0 1200 ${chartHeight}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="border border-border rounded-lg shadow-sm bg-background"
+      >
         <defs>
           <linearGradient id="chartBg" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="var(--color-background)" />
-            <stop offset="100%" stopColor="var(--color-muted)" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="hsl(var(--background))" />
+            <stop offset="100%" stopColor="hsl(var(--muted))" stopOpacity="0.1" />
           </linearGradient>
 
           <filter id="glow">
@@ -92,63 +96,69 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
           </filter>
         </defs>
 
-        <rect width={chartWidth} height={chartHeight} fill="url(#chartBg)" />
+        <rect width="1200" height={chartHeight} fill="url(#chartBg)" />
 
-        {timeframes.map((tf, index) => (
-          <g key={tf}>
-            {/* Alternating background for better visual separation */}
-            {index % 2 === 0 && (
-              <rect
-                x={margin.left}
-                y={margin.top + index * timeframeHeight}
-                width={plotWidth}
-                height={timeframeHeight}
-                fill="var(--color-muted)"
-                fillOpacity="0.05"
+        {timeframes.map((tf, index) => {
+          const plotWidth = 1200 - margin.left - margin.right
+          return (
+            <g key={tf}>
+              {/* Alternating background for better visual separation */}
+              {index % 2 === 0 && (
+                <rect
+                  x={margin.left}
+                  y={margin.top + index * timeframeHeight}
+                  width={plotWidth}
+                  height={timeframeHeight}
+                  fill="hsl(var(--muted))"
+                  fillOpacity="0.05"
+                />
+              )}
+
+              {/* Timeframe separator lines */}
+              <line
+                x1={margin.left}
+                y1={margin.top + index * timeframeHeight}
+                x2={1200 - margin.right}
+                y2={margin.top + index * timeframeHeight}
+                stroke="hsl(var(--border))"
+                strokeWidth={index === 0 ? 2 : 1}
+                strokeDasharray={index === 0 ? "0" : "3,3"}
               />
-            )}
 
-            {/* Timeframe separator lines */}
-            <line
-              x1={margin.left}
-              y1={margin.top + index * timeframeHeight}
-              x2={chartWidth - margin.right}
-              y2={margin.top + index * timeframeHeight}
-              stroke="var(--color-border)"
-              strokeWidth={index === 0 ? 2 : 1}
-              strokeDasharray={index === 0 ? "0" : "3,3"}
-            />
+              <text
+                x={margin.left - 20}
+                y={margin.top + index * timeframeHeight + timeframeHeight / 2}
+                textAnchor="end"
+                dominantBaseline="middle"
+                className="text-base font-bold"
+                fill="hsl(var(--foreground))"
+              >
+                {timeframeLabels[tf]}
+              </text>
 
-            <text
-              x={margin.left - 15}
-              y={margin.top + index * timeframeHeight + timeframeHeight / 2}
-              textAnchor="end"
-              dominantBaseline="middle"
-              className="text-sm font-semibold fill-foreground"
-            >
-              {timeframeLabels[tf]}
-            </text>
-
-            {/* Strength indicator bar */}
-            <rect
-              x={margin.left - 8}
-              y={margin.top + index * timeframeHeight + timeframeHeight / 2 - 2}
-              width={4}
-              height={4}
-              fill="var(--color-primary)"
-              fillOpacity={timeframeStrength[tf]}
-            />
-          </g>
-        ))}
+              {/* Strength indicator bar */}
+              <rect
+                x={margin.left - 12}
+                y={margin.top + index * timeframeHeight + timeframeHeight / 2 - 3}
+                width={6}
+                height={6}
+                fill="hsl(var(--primary))"
+                fillOpacity={timeframeStrength[tf]}
+                rx="1"
+              />
+            </g>
+          )
+        })}
 
         {poisByTimeframe.map(({ timeframe, buyPois, sellPois }) => {
           const tfIndex = timeframes.indexOf(timeframe)
           const tfY = margin.top + tfIndex * timeframeHeight
           const tfHeight = timeframeHeight
+          const plotWidth = 1200 - margin.left - margin.right
 
           return (
             <g key={timeframe}>
-              {/* Buy POIs (below centerline) */}
+              {/* Buy POIs */}
               {buyPois.map((poi, index) => {
                 const y1 = priceToY(poi.end)
                 const y2 = priceToY(poi.start)
@@ -169,15 +179,15 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
                       strokeWidth={isActive ? 3 : 1}
                       strokeDasharray={isActive ? "0" : "2,2"}
                       filter={isActive ? "url(#glow)" : "none"}
-                      className={isActive ? "drop-shadow-lg" : ""}
+                      rx="4"
                     />
 
-                    {/* POI Label with better positioning */}
+                    {/* POI Label */}
                     <text
-                      x={margin.left + 15}
+                      x={margin.left + 20}
                       y={y1 + height / 2}
                       dominantBaseline="middle"
-                      className="text-xs font-medium"
+                      className="text-sm font-semibold"
                       fill="rgb(21, 128, 61)"
                     >
                       {poi.label}
@@ -185,11 +195,11 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
 
                     {/* Price range indicator */}
                     <text
-                      x={chartWidth - margin.right - 10}
+                      x={1200 - margin.right - 15}
                       y={y1 + height / 2}
                       textAnchor="end"
                       dominantBaseline="middle"
-                      className="text-xs"
+                      className="text-sm font-medium"
                       fill="rgb(21, 128, 61)"
                     >
                       {poi.start.toFixed(1)}-{poi.end.toFixed(1)}
@@ -198,7 +208,7 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
                 )
               })}
 
-              {/* Sell POIs (above centerline) */}
+              {/* Sell POIs */}
               {sellPois.map((poi, index) => {
                 const y1 = priceToY(poi.end)
                 const y2 = priceToY(poi.start)
@@ -219,15 +229,15 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
                       strokeWidth={isActive ? 3 : 1}
                       strokeDasharray={isActive ? "0" : "2,2"}
                       filter={isActive ? "url(#glow)" : "none"}
-                      className={isActive ? "drop-shadow-lg" : ""}
+                      rx="4"
                     />
 
                     {/* POI Label */}
                     <text
-                      x={margin.left + 15}
+                      x={margin.left + 20}
                       y={y1 + height / 2}
                       dominantBaseline="middle"
-                      className="text-xs font-medium"
+                      className="text-sm font-semibold"
                       fill="rgb(185, 28, 28)"
                     >
                       {poi.label}
@@ -235,11 +245,11 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
 
                     {/* Price range indicator */}
                     <text
-                      x={chartWidth - margin.right - 10}
+                      x={1200 - margin.right - 15}
                       y={y1 + height / 2}
                       textAnchor="end"
                       dominantBaseline="middle"
-                      className="text-xs"
+                      className="text-sm font-medium"
                       fill="rgb(185, 28, 28)"
                     >
                       {poi.start.toFixed(1)}-{poi.end.toFixed(1)}
@@ -254,7 +264,7 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
         <line
           x1={margin.left}
           y1={priceToY(livePrice)}
-          x2={chartWidth - margin.right}
+          x2={1200 - margin.right}
           y2={priceToY(livePrice)}
           stroke={
             priceStatus === "buy"
@@ -263,16 +273,17 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
                 ? "rgb(239, 68, 68)"
                 : priceStatus === "conflict"
                   ? "rgb(249, 115, 22)"
-                  : "var(--color-foreground)"
+                  : "hsl(var(--foreground))"
           }
-          strokeWidth={3}
+          strokeWidth={4}
           filter="url(#glow)"
         />
 
+        {/* Price indicator circle */}
         <circle
-          cx={chartWidth - margin.right + 25}
+          cx={1200 - margin.right + 30}
           cy={priceToY(livePrice)}
-          r={6}
+          r={8}
           fill={
             priceStatus === "buy"
               ? "rgb(34, 197, 94)"
@@ -280,39 +291,43 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
                 ? "rgb(239, 68, 68)"
                 : priceStatus === "conflict"
                   ? "rgb(249, 115, 22)"
-                  : "var(--color-foreground)"
+                  : "hsl(var(--foreground))"
           }
           filter="url(#glow)"
         />
 
+        {/* Price text */}
         <text
-          x={chartWidth - margin.right + 40}
+          x={1200 - margin.right + 50}
           y={priceToY(livePrice)}
           dominantBaseline="middle"
-          className="text-sm font-bold fill-foreground"
+          className="text-base font-bold"
+          fill="hsl(var(--foreground))"
         >
           {livePrice.toFixed(2)}
         </text>
 
+        {/* Price scale */}
         {Array.from({ length: 11 }, (_, i) => {
           const price = minPrice + (priceRange * i) / 10
           const y = priceToY(price)
           return (
             <g key={i}>
               <line
-                x1={margin.left - 8}
+                x1={margin.left - 10}
                 y1={y}
                 x2={margin.left}
                 y2={y}
-                stroke="var(--color-muted-foreground)"
+                stroke="hsl(var(--muted-foreground))"
                 strokeWidth={1}
               />
               <text
-                x={margin.left - 12}
+                x={margin.left - 15}
                 y={y}
                 textAnchor="end"
                 dominantBaseline="middle"
-                className="text-xs fill-muted-foreground"
+                className="text-sm"
+                fill="hsl(var(--muted-foreground))"
               >
                 {price.toFixed(1)}
               </text>
@@ -320,7 +335,7 @@ export function MirrorChart({ pois, livePrice }: MirrorChartProps) {
           )
         })}
 
-        <text x={chartWidth / 2} y={20} textAnchor="middle" className="text-sm font-semibold fill-foreground">
+        <text x="600" y="25" textAnchor="middle" className="text-lg font-bold" fill="hsl(var(--foreground))">
           SMC POI Mirror Chart - Price: {livePrice.toFixed(2)} ({priceStatus.toUpperCase()})
         </text>
       </svg>
